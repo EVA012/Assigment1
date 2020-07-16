@@ -36,10 +36,15 @@ def svm_loss_naive(W, X, y, reg):
             margin = scores[j] - correct_class_score + 1 # note delta = 1
             if margin > 0:
                 loss += margin
+                dW[:,j] += X[i]
+                dW[:,y[i]] -= X[i]
 
     # Right now the loss is a sum over all training examples, but we want it
     # to be an average instead so we divide by num_train.
     loss /= num_train
+    dW /= num_train
+    dW += 2 * reg * W
+    #print(dW[0])
 
     # Add regularization to the loss.
     loss += reg * np.sum(W * W)
@@ -54,7 +59,8 @@ def svm_loss_naive(W, X, y, reg):
     #############################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    pass
+    #pass
+    #dW = np.gradient(W)
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     
@@ -78,7 +84,21 @@ def svm_loss_vectorized(W, X, y, reg):
     #############################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    pass
+    #pass
+    delta = 1.0
+    num_classes = W.shape[1]
+    num_train = X.shape[0]
+    scores = X.dot(W)
+    correct_class_score = scores[np.arange(num_train), y].reshape(-1,1)
+    margins = np.maximum(0, scores - correct_class_score + delta)
+        
+    margins[np.arange(num_train),y] = 0
+    
+    loss += np.sum(margins)
+    loss /= num_train
+    loss += reg*np.sum(W * W)
+        
+    
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
@@ -93,7 +113,18 @@ def svm_loss_vectorized(W, X, y, reg):
     #############################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    pass
+    #pass
+    ret = np.zeros(scores.shape)
+    ret[margins != 0] = 1
+    print(ret.sum(1))
+    ret[range(num_train),y] = -ret.sum(1)
+    print(ret[range(num_train),y].shape)
+    
+    
+    dW += X.T @ ret
+    
+    dW /= num_train
+    dW += 2 * reg * W
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
