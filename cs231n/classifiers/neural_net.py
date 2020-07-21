@@ -42,6 +42,10 @@ class TwoLayerNet(object):
         self.params['b1'] = np.zeros(hidden_size)
         self.params['W2'] = std * np.random.randn(hidden_size, output_size)
         self.params['b2'] = np.zeros(output_size)
+        #print(self.params['W1'])
+        #print(self.params['b1'])
+        #print(self.params['W2'])
+        #print(self.params['b2'])
 
     def loss(self, X, y=None, reg=0.0):
         """
@@ -80,7 +84,10 @@ class TwoLayerNet(object):
         #############################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-        pass
+        #pass
+        #scores = (X.dot(W1)+b1).chip(0).dot(W2)+b2
+        out1 = np.maximum(0, X.dot(W1) + b1) # relu, (N, H)
+        scores = out1.dot(W2) + b2 # (N, C)
 
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
@@ -98,7 +105,12 @@ class TwoLayerNet(object):
         #############################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-        pass
+        #pass
+        correct_class_score = scores[np.arange(N), y].reshape(N, 1)
+        exp_sum = np.sum(np.exp(scores), axis=1).reshape(N, 1)
+        loss = np.sum(np.log(exp_sum) - correct_class_score)
+        loss /= N
+        loss += 0.5 * reg * np.sum(W1 * W1)+  0.5 * reg * np.sum(W2 * W2)
 
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
@@ -111,7 +123,21 @@ class TwoLayerNet(object):
         #############################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-        pass
+        #pass
+        margin = np.exp(scores) / exp_sum
+        margin[np.arange(N), y] += -1
+        margin /= N #(N, C)
+        dW2 = out1.T.dot(margin) #(H ,C)
+        dW2 += reg * W2 
+        grads['W2'] = dW2
+        grads['b2'] = np.sum(margin, axis = 0)
+        
+        margin1 = margin.dot(W2.T) #(N, H)
+        margin1[out1 <= 0] = 0
+        dW1 = X.T.dot(margin1) #(D, H)
+        dW1 += reg * W1 
+        grads['W1'] = dW1
+        grads['b1'] = np.sum(margin1, axis = 0)
 
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
@@ -156,7 +182,10 @@ class TwoLayerNet(object):
             #########################################################################
             # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-            pass
+            #pass
+            mask = np.random.choice(num_train, batch_size, replace=True)
+            X_batch = X[mask]
+            y_batch = y[mask]
 
             # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
@@ -172,7 +201,11 @@ class TwoLayerNet(object):
             #########################################################################
             # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-            pass
+            #pass
+            self.params['W1'] -= learning_rate * grads['W1']
+            self.params['W2'] -= learning_rate * grads['W2']
+            self.params['b1'] -= learning_rate * grads['b1']
+            self.params['b2'] -= learning_rate * grads['b2']
 
             # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
@@ -218,7 +251,9 @@ class TwoLayerNet(object):
         ###########################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-        pass
+        #pass
+        out1 = np.maximum(0, X.dot(self.params['W1']) + self.params['b1']) # relu, (N, H)
+        y_pred =  np.argmax(out1.dot(self.params['W2']) + self.params['b2'],axis = 1) # (N, C)
 
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
